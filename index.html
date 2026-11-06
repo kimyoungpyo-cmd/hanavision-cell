@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>속회 보고서</title>
+    <title>속회 주일예배보고</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -31,7 +31,7 @@
     <div class="max-w-md mx-auto bg-white min-h-screen shadow-lg sm:my-8 sm:rounded-2xl overflow-hidden pb-20">
         <!-- Header -->
         <div class="bg-blue-600 text-white p-6 text-center shadow-md relative z-10">
-            <h1 class="text-2xl font-bold tracking-tight">속회 보고서</h1>
+            <h1 class="text-2xl font-bold tracking-tight">속회 주일예배보고</h1>
             <p class="text-blue-100 text-sm mt-1">하나비전교회</p>
         </div>
 
@@ -50,11 +50,25 @@
                     기본 정보
                 </h2>
 
+                <!-- 교구 선택 (상위 카테고리) -->
                 <div>
-                    <label for="cellGroup" class="block text-sm font-medium text-gray-700 mb-1">소속 교구/속회 *</label>
+                    <label for="districtGroup" class="block text-sm font-medium text-gray-700 mb-1">교구 선택 *</label>
+                    <select id="districtGroup" name="districtGroup" required class="block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm appearance-none">
+                        <option value="" disabled selected>교구를 선택해주세요</option>
+                        <option value="1교구">1교구</option>
+                        <option value="2교구">2교구</option>
+                        <option value="3교구">3교구</option>
+                        <option value="4교구">4교구</option>
+                        <option value="남성교구">남성교구</option>
+                    </select>
+                </div>
+
+                <!-- 속회 선택 (하위 카테고리) -->
+                <div id="cellGroupContainer" class="hidden fade-in">
+                    <label for="cellGroup" class="block text-sm font-medium text-gray-700 mb-1">상세 속회 선택 *</label>
                     <select id="cellGroup" name="cellGroup" required class="block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm appearance-none">
-                        <option value="" disabled selected>선택해주세요</option>
-                        <!-- Options will be populated here -->
+                        <option value="" disabled selected>먼저 교구를 선택해주세요</option>
+                        <!-- Options will be populated based on district selection -->
                     </select>
                 </div>
 
@@ -65,18 +79,9 @@
                 </div>
 
                 <div>
-                    <label for="meetingDate" class="block text-sm font-medium text-gray-700 mb-1">모임 일자 *</label>
+                    <label for="meetingDate" class="block text-sm font-medium text-gray-700 mb-1">주일 날짜 *</label>
                     <input type="date" id="meetingDate" name="meetingDate" required class="block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm">
-                </div>
-                
-                <div>
-                    <label for="meetingType" class="block text-sm font-medium text-gray-700 mb-1">모임 형태 *</label>
-                    <select id="meetingType" name="meetingType" required class="block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm appearance-none">
-                        <option value="대면(가정)">대면 (성도 가정)</option>
-                        <option value="대면(교회)">대면 (교회)</option>
-                        <option value="비대면(온라인)">비대면 (줌/카톡 등)</option>
-                        <option value="모임쉬어감">모임 쉬어감</option>
-                    </select>
+                    <p class="text-xs text-gray-500 mt-1 pl-1">※ 가장 최근 주일 날짜로 자동 설정됩니다.</p>
                 </div>
             </div>
 
@@ -84,7 +89,7 @@
             <div id="attendanceSection" class="space-y-4 hidden fade-in">
                 <h2 class="text-lg font-semibold border-b pb-2 text-blue-800 flex items-center">
                     <span class="bg-blue-100 text-blue-800 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm mr-2">2</span>
-                    속도원 출결
+                    주일 출석 확인
                 </h2>
                 <div class="flex justify-between items-center text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border">
                     <span>총원: <strong id="totalCount" class="text-blue-700">0</strong>명</span>
@@ -96,7 +101,7 @@
                 </div>
             </div>
 
-            <!-- 3. Report Details Section (통합됨) -->
+            <!-- 3. Report Details Section -->
             <div id="detailsSection" class="space-y-4 hidden fade-in">
                 <h2 class="text-lg font-semibold border-b pb-2 text-blue-800 flex items-center mt-8">
                     <span class="bg-blue-100 text-blue-800 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm mr-2">3</span>
@@ -105,7 +110,7 @@
 
                 <div>
                     <label for="generalNotes" class="block text-sm font-medium text-gray-700 mb-1">남기고 싶은 말 (선택사항)</label>
-                    <textarea id="generalNotes" name="generalNotes" rows="5" placeholder="기도제목, 심방 요청, 말씀 은혜 등 목사님께 전달하고 싶은 내용을 자유롭게 적어주세요." class="block w-full pl-3 pr-3 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm"></textarea>
+                    <textarea id="generalNotes" name="generalNotes" rows="5" placeholder="기도제목, 심방 요청, 교구 목사님께 전달하고 싶은 내용을 자유롭게 적어주세요." class="block w-full pl-3 pr-3 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm"></textarea>
                 </div>
             </div>
 
@@ -132,7 +137,7 @@
                     </div>
                     <h3 class="text-xl leading-6 font-bold text-gray-900" id="modal-title">제출 완료</h3>
                     <div class="mt-2">
-                        <p class="text-sm text-gray-500">속회 보고서가 성공적으로 제출되었습니다. 감사합니다.</p>
+                        <p class="text-sm text-gray-500">주일예배보고가 성공적으로 제출되었습니다. 감사합니다.</p>
                     </div>
                 </div>
                 <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
@@ -154,6 +159,8 @@
         
         // DOM Elements
         const form = document.getElementById('reportForm');
+        const districtGroupSelect = document.getElementById('districtGroup');
+        const cellGroupContainer = document.getElementById('cellGroupContainer');
         const cellGroupSelect = document.getElementById('cellGroup');
         const leaderInfoContainer = document.getElementById('leaderInfoContainer');
         const leaderNameDisplay = document.getElementById('leaderNameDisplay');
@@ -171,7 +178,23 @@
         let memberCount = 0;
         let presentCount = 0;
 
-        document.getElementById('meetingDate').valueAsDate = new Date();
+        // Date Setup: 가장 최근 주일(Sunday) 날짜 구하기
+        function getMostRecentSunday() {
+            const today = new Date();
+            const dayOfWeek = today.getDay(); // 0 is Sunday
+            const diff = dayOfWeek === 0 ? 0 : dayOfWeek; 
+            
+            const lastSunday = new Date(today);
+            lastSunday.setDate(today.getDate() - diff);
+            
+            const year = lastSunday.getFullYear();
+            const month = String(lastSunday.getMonth() + 1).padStart(2, '0');
+            const day = String(lastSunday.getDate()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}`;
+        }
+        
+        document.getElementById('meetingDate').value = getMostRecentSunday();
 
         // 1. Fetch Organization Data from Google Sheets
         window.addEventListener('DOMContentLoaded', async () => {
@@ -180,14 +203,6 @@
                 if (!response.ok) throw new Error('Network response was not ok');
                 
                 cellData = await response.json();
-                
-                // Populate select options
-                Object.keys(cellData).forEach(group => {
-                    const option = document.createElement('option');
-                    option.value = group;
-                    option.textContent = group;
-                    cellGroupSelect.appendChild(option);
-                });
 
                 // Hide loader, show form
                 loadingStatus.classList.add('hidden');
@@ -199,8 +214,38 @@
             }
         });
 
+        // 💡 상위 카테고리 (교구) 선택 시 하위 속회 필터링
+        districtGroupSelect.addEventListener('change', function() {
+            const selectedDistrict = this.value; 
+            
+            cellGroupSelect.innerHTML = '<option value="" disabled selected>상세 속회를 선택해주세요</option>';
+            
+            let hasOptions = false;
+            Object.keys(cellData).forEach(group => {
+                if (group.startsWith(selectedDistrict)) {
+                    const option = document.createElement('option');
+                    option.value = group;
+                    // "1교구 구곡지역 1속" 에서 "1교구 " 부분을 잘라내고 "구곡지역 1속"만 노출
+                    option.textContent = group.replace(selectedDistrict + " ", ""); 
+                    cellGroupSelect.appendChild(option);
+                    hasOptions = true;
+                }
+            });
+
+            if (hasOptions) {
+                cellGroupContainer.classList.remove('hidden');
+            } else {
+                cellGroupSelect.innerHTML = '<option value="" disabled selected>해당 교구에 속회 데이터가 없습니다</option>';
+                cellGroupContainer.classList.remove('hidden');
+            }
+            
+            // 기존 선택된 정보 초기화
+            resetLowerSections();
+        });
+
         cellGroupSelect.addEventListener('change', function() {
-            const selectedGroup = this.value;
+            const selectedGroup = this.value; 
+            
             if (selectedGroup && cellData[selectedGroup]) {
                 const groupInfo = cellData[selectedGroup];
                 leaderNameDisplay.textContent = groupInfo.leader || "미지정";
@@ -214,6 +259,13 @@
                 submitContainer.classList.remove('hidden');
             }
         });
+
+        function resetLowerSections() {
+            leaderInfoContainer.classList.add('hidden');
+            attendanceSection.classList.add('hidden');
+            detailsSection.classList.add('hidden');
+            submitContainer.classList.add('hidden');
+        }
 
         function generateMemberUI(members) {
             membersContainer.innerHTML = '';
@@ -305,17 +357,16 @@
             });
 
             if (!allSelected) {
-                alert("모든 속도원의 출결 상태를 선택해주세요.");
+                alert("모든 속도원의 주일 출석 상태를 선택해주세요.");
                 return;
             }
 
-            // Build Payload (수정됨: 남기고 싶은 말만 포함)
+            // Build Payload (모임 형태 삭제)
             const formData = new FormData(form);
             const payload = {
-                cellGroup: formData.get('cellGroup'),
+                cellGroup: formData.get('cellGroup'), 
                 leaderName: formData.get('leaderName'),
                 meetingDate: formData.get('meetingDate'),
-                meetingType: formData.get('meetingType'),
                 totalCount: memberCount,
                 presentCount: presentCount,
                 generalNotes: formData.get('generalNotes') || "",
@@ -330,7 +381,7 @@
                 const response = await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' } // text/plain to avoid CORS preflight in Apps Script
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                 });
                 
                 const result = await response.json();
@@ -348,4 +399,3 @@
         });
     </script>
 </body>
-</html>

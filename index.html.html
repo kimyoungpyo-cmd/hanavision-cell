@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>속회 보고서</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .attendance-radio:checked + label[for$="-present"] { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        .attendance-radio:checked + label[for$="-absent"] { background-color: #ef4444; color: white; border-color: #ef4444; }
+        .attendance-radio:checked + label[for$="-uncontacted"] { background-color: #f59e0b; color: white; border-color: #f59e0b; }
+
+        /* Loader Animation */
+        .loader {
+            border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%;
+            width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-blue-50 text-gray-800 font-sans antialiased min-h-screen">
+
+    <div class="max-w-md mx-auto bg-white min-h-screen shadow-lg sm:my-8 sm:rounded-2xl overflow-hidden pb-20">
+        <!-- Header -->
+        <div class="bg-blue-600 text-white p-6 text-center shadow-md relative z-10">
+            <h1 class="text-2xl font-bold tracking-tight">속회 보고서</h1>
+            <p class="text-blue-100 text-sm mt-1">하나비전교회</p>
+        </div>
+
+        <form id="reportForm" class="p-6 space-y-8">
+            
+            <!-- Loading Status -->
+            <div id="loadingStatus" class="text-center py-4 fade-in">
+                <div class="loader mb-2"></div>
+                <p class="text-sm text-blue-600 font-medium">최신 조직도를 불러오는 중입니다...</p>
+            </div>
+
+            <!-- 1. Basic Info Section -->
+            <div id="basicInfoSection" class="space-y-4 hidden">
+                <h2 class="text-lg font-semibold border-b pb-2 text-blue-800 flex items-center">
+                    <span class="bg-blue-100 text-blue-800 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm mr-2">1</span>
+                    기본 정보
+                </h2>
+
+                <div>
+                    <label for="cellGroup" class="block text-sm font-medium text-gray-700 mb-1">소속 교구/속회 *</label>
+                    <select id="cellGroup" name="cellGroup" required class="block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm appearance-none">
+                        <option value="" disabled selected>선택해주세요</option>
+                        <!-- Options will be populated here -->
+                    </select>
+                </div>
+
+                <div id="leaderInfoContainer" class="hidden fade-in bg-blue-50 p-4 rounded-xl border border-blue-100 mt-4">
+                    <p class="text-sm text-gray-600 mb-1">보고자 (속장)</p>
+                    <p id="leaderNameDisplay" class="font-bold text-lg text-blue-900">-</p>
+                    <input type="hidden" id="leaderName" name="leaderName">
+                </div>
+
+                <div>
+                    <label for="meetingDate" class="block text-sm font-medium text-gray-700 mb-1">모임 일자 *</label>
+                    <input type="date" id="meetingDate" name="meetingDate" required class="block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm">
+                </div>
+                
+                <div>
+                    <label for="meetingType" class="block text-sm font-medium text-gray-700 mb-1">모임 형태 *</label>
+                    <select id="meetingType" name="meetingType" required class="block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm appearance-none">
+                        <option value="대면(가정)">대면 (성도 가정)</option>
+                        <option value="대면(교회)">대면 (교회)</option>
+                        <option value="비대면(온라인)">비대면 (줌/카톡 등)</option>
+                        <option value="모임쉬어감">모임 쉬어감</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 2. Member Attendance Section -->
+            <div id="attendanceSection" class="space-y-4 hidden fade-in">
+                <h2 class="text-lg font-semibold border-b pb-2 text-blue-800 flex items-center">
+                    <span class="bg-blue-100 text-blue-800 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm mr-2">2</span>
+                    속도원 출결 및 사유
+                </h2>
+                <div class="flex justify-between items-center text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border">
+                    <span>총원: <strong id="totalCount" class="text-blue-700">0</strong>명</span>
+                    <span>출석: <strong id="presentCount" class="text-blue-700">0</strong>명</span>
+                </div>
+
+                <div id="membersContainer" class="space-y-5">
+                    <!-- Member items will be injected here via JavaScript -->
+                </div>
+            </div>
+
+            <!-- 3. Report Details Section -->
+            <div id="detailsSection" class="space-y-4 hidden fade-in">
+                <h2 class="text-lg font-semibold border-b pb-2 text-blue-800 flex items-center mt-8">
+                    <span class="bg-blue-100 text-blue-800 w-6 h-6 rounded-full inline-flex items-center justify-center text-sm mr-2">3</span>
+                    보고 내용
+                </h2>
+
+                <div>
+                    <label for="offering" class="block text-sm font-medium text-gray-700 mb-1">속회 헌금 (원)</label>
+                    <input type="number" id="offering" name="offering" placeholder="예: 30000" class="block w-full pl-3 pr-3 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm">
+                </div>
+
+                <div>
+                    <label for="graceSharing" class="block text-sm font-medium text-gray-700 mb-1">말씀 나눔 및 은혜</label>
+                    <textarea id="graceSharing" name="graceSharing" rows="3" placeholder="오늘 나눈 말씀의 은혜를 간단히 적어주세요." class="block w-full pl-3 pr-3 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm"></textarea>
+                </div>
+
+                <div>
+                    <label for="prayerRequests" class="block text-sm font-medium text-gray-700 mb-1">🙏 주요 기도 제목</label>
+                    <textarea id="prayerRequests" name="prayerRequests" rows="3" placeholder="속도원들의 기도제목을 적어주세요." class="block w-full pl-3 pr-3 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm"></textarea>
+                </div>
+
+                <div class="bg-red-50 p-4 rounded-xl border border-red-100 mt-6">
+                    <div class="flex items-start">
+                        <div class="flex items-center h-5">
+                            <input id="needsCare" name="needsCare" type="checkbox" class="focus:ring-red-500 h-5 w-5 text-red-600 border-gray-300 rounded cursor-pointer">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="needsCare" class="font-medium text-red-800 cursor-pointer">🚨 교역자 심방/연락 요망 성도가 있습니까?</label>
+                            <p class="text-red-600 mt-1">체크하시면 교역자에게 긴급 알림이 갑니다.</p>
+                        </div>
+                    </div>
+                    
+                    <div id="careDetailsContainer" class="mt-4 hidden fade-in">
+                        <label for="careDetails" class="block text-sm font-medium text-red-800 mb-1">대상자 이름 및 상황 *</label>
+                        <textarea id="careDetails" name="careDetails" rows="2" placeholder="예: 김성도 집사님 - 입원 (인천길병원)" class="block w-full pl-3 pr-3 py-3 text-base border-red-300 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm rounded-lg border bg-white shadow-sm"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div id="submitContainer" class="pt-6 hidden fade-in">
+                <button type="submit" id="submitBtn" class="w-full flex justify-center items-center py-4 px-4 border border-transparent rounded-xl shadow-md text-lg font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    <span>보고서 제출하기</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="hidden fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 text-center">
+                    <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                        <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl leading-6 font-bold text-gray-900" id="modal-title">제출 완료</h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500">속회 보고서가 성공적으로 제출되었습니다. 감사합니다.</p>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" onclick="location.reload()" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        새로고침
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 🚨 목사님의 Google Apps Script 웹앱 주소 입력 🚨
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwoY5cXstdn7vkVvyiNNuKNL4BDn1NJrBiX_3pqRFGb84ymUwMCT_a1LzvHTxuLT-x8wQ/exec';
+        // ==========================================
+
+        let cellData = {};
+        
+        // DOM Elements
+        const form = document.getElementById('reportForm');
+        const cellGroupSelect = document.getElementById('cellGroup');
+        const leaderInfoContainer = document.getElementById('leaderInfoContainer');
+        const leaderNameDisplay = document.getElementById('leaderNameDisplay');
+        const leaderNameInput = document.getElementById('leaderName');
+        const attendanceSection = document.getElementById('attendanceSection');
+        const detailsSection = document.getElementById('detailsSection');
+        const submitContainer = document.getElementById('submitContainer');
+        const membersContainer = document.getElementById('membersContainer');
+        const totalCountEl = document.getElementById('totalCount');
+        const presentCountEl = document.getElementById('presentCount');
+        const needsCareCheckbox = document.getElementById('needsCare');
+        const careDetailsContainer = document.getElementById('careDetailsContainer');
+        const careDetailsInput = document.getElementById('careDetails');
+        const loadingStatus = document.getElementById('loadingStatus');
+        const basicInfoSection = document.getElementById('basicInfoSection');
+        const submitBtn = document.getElementById('submitBtn');
+
+        let memberCount = 0;
+        let presentCount = 0;
+
+        document.getElementById('meetingDate').valueAsDate = new Date();
+
+        // 1. Fetch Organization Data from Google Sheets
+        window.

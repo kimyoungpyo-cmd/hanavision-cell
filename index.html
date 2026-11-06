@@ -50,7 +50,7 @@
                     기본 정보
                 </h2>
 
-                <!-- 교구 선택 (상위 카테고리) -->
+                <!-- 1단계: 교구 선택 -->
                 <div>
                     <label for="districtGroup" class="block text-sm font-medium text-gray-700 mb-1">교구 선택 *</label>
                     <select id="districtGroup" name="districtGroup" required class="block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm appearance-none">
@@ -63,12 +63,21 @@
                     </select>
                 </div>
 
-                <!-- 속회 선택 (하위 카테고리) -->
+                <!-- 2단계: 지역 선택 -->
+                <div id="regionGroupContainer" class="hidden fade-in">
+                    <label for="regionGroup" class="block text-sm font-medium text-gray-700 mb-1">지역 선택 *</label>
+                    <select id="regionGroup" name="regionGroup" required class="block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm appearance-none">
+                        <option value="" disabled selected>먼저 교구를 선택해주세요</option>
+                        <!-- Options populated via JS -->
+                    </select>
+                </div>
+
+                <!-- 3단계: 속회 선택 -->
                 <div id="cellGroupContainer" class="hidden fade-in">
                     <label for="cellGroup" class="block text-sm font-medium text-gray-700 mb-1">상세 속회 선택 *</label>
                     <select id="cellGroup" name="cellGroup" required class="block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-xl border bg-gray-50 shadow-sm appearance-none">
-                        <option value="" disabled selected>먼저 교구를 선택해주세요</option>
-                        <!-- Options will be populated based on district selection -->
+                        <option value="" disabled selected>먼저 지역을 선택해주세요</option>
+                        <!-- Options populated via JS -->
                     </select>
                 </div>
 
@@ -160,8 +169,11 @@
         // DOM Elements
         const form = document.getElementById('reportForm');
         const districtGroupSelect = document.getElementById('districtGroup');
+        const regionGroupContainer = document.getElementById('regionGroupContainer');
+        const regionGroupSelect = document.getElementById('regionGroup');
         const cellGroupContainer = document.getElementById('cellGroupContainer');
         const cellGroupSelect = document.getElementById('cellGroup');
+        
         const leaderInfoContainer = document.getElementById('leaderInfoContainer');
         const leaderNameDisplay = document.getElementById('leaderNameDisplay');
         const leaderNameInput = document.getElementById('leaderName');
@@ -214,35 +226,90 @@
             }
         });
 
-        // 💡 상위 카테고리 (교구) 선택 시 하위 속회 필터링
+        // 숫자 추출 헬퍼 함수 (정렬용)
+        function extractNumber(str) {
+            const match = str.match(/\d+/);
+            return match ? parseInt(match[0], 10) : 0;
+        }
+
+        // 1단계: 교구 선택 시 -> 지역 목록 생성
         districtGroupSelect.addEventListener('change', function() {
             const selectedDistrict = this.value; 
             
-            cellGroupSelect.innerHTML = '<option value="" disabled selected>상세 속회를 선택해주세요</option>';
+            regionGroupSelect.innerHTML = '<option value="" disabled selected>지역을 선택해주세요</option>';
+            const regions = new Set();
             
-            let hasOptions = false;
             Object.keys(cellData).forEach(group => {
-                if (group.startsWith(selectedDistrict)) {
-                    const option = document.createElement('option');
-                    option.value = group;
-                    // "1교구 구곡지역 1속" 에서 "1교구 " 부분을 잘라내고 "구곡지역 1속"만 노출
-                    option.textContent = group.replace(selectedDistrict + " ", ""); 
-                    cellGroupSelect.appendChild(option);
-                    hasOptions = true;
+                // "1교구 구곡지역 1속" 형태에서 파싱
+                const parts = group.split(" ");
+                if (parts[0] === selectedDistrict && parts.length >= 2) {
+                    regions.add(parts[1]); // "구곡지역"
                 }
             });
 
-            if (hasOptions) {
-                cellGroupContainer.classList.remove('hidden');
+            if (regions.size > 0) {
+                // 가나다 순 정렬
+                Array.from(regions).sort().forEach(region => {
+                    const option = document.createElement('option');
+                    option.value = region;
+                    option.textContent = region;
+                    regionGroupSelect.appendChild(option);
+                });
+                regionGroupContainer.classList.remove('hidden');
             } else {
-                cellGroupSelect.innerHTML = '<option value="" disabled selected>해당 교구에 속회 데이터가 없습니다</option>';
-                cellGroupContainer.classList.remove('hidden');
+                regionGroupSelect.innerHTML = '<option value="" disabled selected>데이터 없음</option>';
+                regionGroupContainer.classList.remove('hidden');
             }
             
-            // 기존 선택된 정보 초기화
+            // 하위 선택 초기화
+            cellGroupContainer.classList.add('hidden');
             resetLowerSections();
         });
 
+        // 2단계: 지역 선택 시 -> 속회 목록 생성 (숫자 오름차순 정렬)
+        regionGroupSelect.addEventListener('change', function() {
+            const selectedDistrict = districtGroupSelect.value;
+            const selectedRegion = this.value;
+            
+            cellGroupSelect.innerHTML = '<option value="" disabled selected>속회를 선택해주세요</option>';
+            
+            const cellKeys = [];
+            Object.keys(cellData).forEach(group => {
+                const parts = group.split(" ");
+                if (parts[0] === selectedDistrict && parts[1] === selectedRegion) {
+                    cellKeys.push(group);
+                }
+            });
+
+            if (cellKeys.length > 0) {
+                // 숫자 기준 오름차순 정렬 (1속 -> 2속 -> 11속)
+                cellKeys.sort((a, b) => {
+                    const partsA = a.split(" ");
+                    const partsB = b.split(" ");
+                    const numA = extractNumber(partsA[2] || "");
+                    const numB = extractNumber(partsB[2] || "");
+                    return numA - numB;
+                });
+
+                cellKeys.forEach(group => {
+                    const parts = group.split(" ");
+                    const cellName = parts.slice(2).join(" "); // "1속"
+                    
+                    const option = document.createElement('option');
+                    option.value = group; // 저장 시에는 전체 이름 전송
+                    option.textContent = cellName;
+                    cellGroupSelect.appendChild(option);
+                });
+                cellGroupContainer.classList.remove('hidden');
+            } else {
+                cellGroupSelect.innerHTML = '<option value="" disabled selected>데이터 없음</option>';
+                cellGroupContainer.classList.remove('hidden');
+            }
+            
+            resetLowerSections();
+        });
+
+        // 3단계: 속회 선택 시 -> 데이터 로드 및 UI 오픈
         cellGroupSelect.addEventListener('change', function() {
             const selectedGroup = this.value; 
             
@@ -332,7 +399,6 @@
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Validation
             const memberCards = document.querySelectorAll('.member-card');
             let allSelected = true;
             let attendanceDetails = [];
@@ -361,10 +427,9 @@
                 return;
             }
 
-            // Build Payload (모임 형태 삭제)
             const formData = new FormData(form);
             const payload = {
-                cellGroup: formData.get('cellGroup'), 
+                cellGroup: formData.get('cellGroup'), // 전체 교구속회 이름이 전송됨
                 leaderName: formData.get('leaderName'),
                 meetingDate: formData.get('meetingDate'),
                 totalCount: memberCount,
@@ -373,7 +438,6 @@
                 attendanceDetails: attendanceDetails
             };
 
-            // Loading state
             submitBtn.innerHTML = '<div class="loader"></div>';
             submitBtn.disabled = true;
 
@@ -399,3 +463,4 @@
         });
     </script>
 </body>
+</html>

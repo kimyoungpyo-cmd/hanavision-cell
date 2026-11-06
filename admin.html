@@ -145,4 +145,85 @@
             }
         }
 
-        function populateDateDropdown(reports)
+        function populateDateDropdown(reports) {
+            const dateSelect = document.getElementById('filterDate');
+            const currentSelected = dateSelect.value;
+            
+            // 고유한 날짜 목록 추출
+            const dates = [...new Set(reports.map(r => r.date))].filter(Boolean);
+            // 내림차순(최신순) 정렬
+            dates.sort((a, b) => new Date(b) - new Date(a));
+
+            dateSelect.innerHTML = '<option value="전체">전체 날짜 모아보기 (최신순)</option>';
+            dates.forEach(date => {
+                const option = document.createElement('option');
+                option.value = date;
+                option.textContent = date + " 주일";
+                dateSelect.appendChild(option);
+            });
+
+            // 이전 선택값 유지 시도
+            if (dates.includes(currentSelected)) {
+                dateSelect.value = currentSelected;
+            }
+        }
+
+        function renderReports() {
+            const container = document.getElementById('reportsContainer');
+            const emptyState = document.getElementById('emptyState');
+            const filterDistrict = document.getElementById('filterDistrict').value;
+            const filterDate = document.getElementById('filterDate').value;
+            
+            container.innerHTML = '';
+
+            // 필터링 적용 (날짜 + 교구)
+            let filtered = allReports.filter(r => {
+                const matchDate = (filterDate === '전체' || r.date === filterDate);
+                const matchDistrict = (filterDistrict === '전체' || (r.group && r.group.includes(filterDistrict)));
+                return matchDate && matchDistrict;
+            });
+
+            // 통계 카드 업데이트
+            document.getElementById('totalReportCount').textContent = filtered.length + '개';
+            const totalPresent = filtered.reduce((acc, cur) => acc + (parseInt(cur.present) || 0), 0);
+            document.getElementById('totalPresentSum').textContent = totalPresent + '명';
+
+            if (filtered.length === 0) {
+                emptyState.classList.add('fade-in');
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach(rep => {
+                const cardHTML = `
+                    <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow fade-in">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">${rep.group}</span>
+                                <h3 class="text-lg font-bold text-gray-900 mt-2">속장: ${rep.leader}</h3>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-blue-600 font-semibold block bg-blue-50 px-2 py-0.5 rounded">주일: ${rep.date}</span>
+                                <span class="inline-block mt-1 bg-green-100 text-green-800 text-xs font-bold px-2.5 py-1 rounded-lg">출석 ${rep.present} / 총원 ${rep.total}명</span>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-sm text-gray-700 mb-3">
+                            <strong class="text-gray-900 block mb-1 text-xs">📋 출결 상세</strong>
+                            <p class="leading-relaxed text-xs text-gray-600">${rep.attendance}</p>
+                        </div>
+                        ${rep.notes ? `
+                            <div class="bg-red-50 p-3 rounded-xl border border-red-100 text-sm text-red-900">
+                                <strong class="block mb-1 text-xs text-red-700">🙏 남기고 싶은 말</strong>
+                                <p class="text-xs leading-relaxed">${rep.notes}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        }
+    </script>
+</body>
+</html>
